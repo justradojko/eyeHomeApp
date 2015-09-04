@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+<!--    <meta name="apple-mobile-web-app-status-bar-style" content="black">-->
+    <title>My App</title>
+    <!-- Path to Framework7 Library CSS-->
+    <!--    <link rel="stylesheet" href="css/framework7.min.css">-->
+    <!-- Path to your custom app styles-->
+    <link rel="stylesheet" href="css/framework7.eyeHome.ios.css">    
+</head>
+
+<body>
+    <!-- Status bar overlay for fullscreen mode-->
+<!--    <div class="statusbar-overlay"></div>-->
+    <!-- Panels overlay-->
+    <div class="panel-overlay"></div>
+    <!-- Left panel with reveal effect-->
+    <div class="panel panel-left panel-reveal">
+        <div class="panel-title">
+            <p>Menu</p>
+        </div>
+        <div class="panel-content">
+            <div class="content-block">
+                <div class="side-panel-row">
+                    <img class="side-panel-icon" src="img/Synchronize%20Filled-50.png"> 
+                    <p><a href="#" id="side-panel-sync" class="side-panel-button">Sync with server</a></p>
+                </div>
+                <div class="side-panel-row">
+                    <img class="side-panel-icon" src="img/Plus%20Math-50.png"> 
+                    <p><a href="#" id="side-panel-add-new-device" class="side-panel-button">Add new device</a></p>
+                </div>
+                <div class="side-panel-row">
+                    <img class="side-panel-icon" src="img/Link%20Filled-50.png"> 
+                    <p><a href="#" id="side-panel-bindings" class="side-panel-button">Device links</a></p>
+                </div>
+                <div class="side-panel-bottom">
+                    <div class="side-panel-row">
+                        <img class="side-panel-icon" src="img/Help-50.png"> 
+                        <p><a href="#" id="side-panel-help" class="side-panel-button">Help</a></p>
+                    </div>                
+                    <div class="side-panel-row">
+                        <img class="side-panel-icon" src="img/Exit-50.png"> 
+                        <p><a href="#" id="side-panel-logout" class="side-panel-button">Logout</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Views-->
+    <div class="views">
+        <!-- Your main view, should have "view-main" class-->
+        <div class="view view-main">
+            <!-- Top Navbar-->
+            <div class="navbar">
+                <div class="navbar-inner">
+                    <div class="left">
+                        <a href="#" class="link icon-only open-panel"> <i class="icon icon-bars"></i></a>
+                    </div>
+                    <div class="center sliding navbar-title" id="place-title"></div>
+                    <div class="right">
+                    </div>
+                </div>
+            </div>
+            <!-- Pages, because we need fixed-through navbar and toolbar, it has additional appropriate classes-->
+            <div class="pages navbar-through toolbar-through">
+                <!-- Page, data-page contains page name-->
+                <div data-page="main" class="page">
+<!--                    <div class="col-25 col-dark">-->
+                    <div class="content-block">
+                        <div class="content-block-inner">
+                            <div>
+                                <span id="main-screen-preloader" class="preloader preloader-white"></span>
+                            </div>                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type=“text/javascript” src="cordova.js"></script>
+    
+    <!-- Path to Framework7 Library JS-->
+    <script type="text/javascript" src="js/framework7.min.js"></script>
+    <!-- Path to your app js-->
+        
+    <script type="text/javascript" src="js/functions.js"></script>    
+    <script type="text/javascript" src="js/my-app.js"></script>    
+</body>
+
+</html>

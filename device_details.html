@@ -1,0 +1,71 @@
+<div class="navbar">
+  <div class="navbar-inner">
+    <div class="left"><a href="#" class="back link"> <i class="icon icon-back"></i><span>Back</span></a></div>
+    <div class="center sliding navbar-title" >Device details</div>
+    <div class="right"><a class="save-button" id='save-button-device-details'> <i class="icon"></i><span>Save</span></a></div>      
+  </div>
+</div>
+
+<div class="pages">
+  <!-- Page, data-page contains page name-->
+    <div data-page="device-details" class="page navbar-through">
+        <div class="page-content">
+            <div class="list-block" id="dimmer-container">
+                <ul>
+                    <li class="item-content">
+                        <div class="item-inner">
+                            <div class="item-title">
+                                Dimming value
+                            </div>
+                            <div>
+                                <p class="item-after-title" id="dimming-value-text">- - %</p>
+                            </div>                          
+                        </div>
+                    </li>                    
+                    <li class="item-content">
+                        <div class="item-inner">
+                            <div class="item-input">
+                                <div class="range-slider">
+                                    <input id="dimming-slider" type="range" min="0" max="100" step="5">
+                                </div>
+                            </div>    
+                        </div>
+                    </li>
+                </ul>                
+            </div>            
+            <div class="list-block" id="device-description-container">
+                <ul>
+                    <a href="device_description.html" class="item-link">
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div class="item-title">
+                                    Device description
+                                </div>
+                            </div>
+                        </li>                    
+                    </a>
+                </ul>
+            </div>
+            <div class="list-block" id="scheduling-container">
+                <ul>
+                    <a href="scheduling.html" class="item-link">
+                        <li class="item-content">
+                            <div class="item-inner">
+                                <div class="item-title">
+                                    Add new scheduling
+                                </div>
+                            </div>
+                        </li>                    
+                    </a>
+                </ul>
+            </div>       
+            <div id="existing-schedulings-container">
+                <div class="content-block-title">Existing schedulings</div>
+                <div class="list-block media-list" id="existing-schedulings">
+                    <ul>
+                    </ul>
+                </div>
+            </div>
+        </div>    
+    </div>
+</div>
