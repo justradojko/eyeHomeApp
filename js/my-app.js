@@ -127,10 +127,7 @@ $$(document).on('pageBeforeAnimation', function(e){
     var timerID = 999;
     if (e.detail.page.name == "device-details"){
         if ( localStorage.getItem("systemID") != null){
-            console.log('DEVICE-DETAILS PAGE: PAGE-BEFORE-ANIMATION'); 
-//            $$('#existing-schedulings ul li').remove();        
-//            printSchedulingToDeviceDetailsPage();
-//            clearInterval(checkForUpdatesTimerID);
+            console.log('DEVICE-DETAILS PAGE: PAGE-BEFORE-ANIMATION');                   
             // ON SLIDER CHANGE, TURN TIMER FOR 1S AND THEN SEND UPDATE TO SERVER
             $$('#dimming-slider').change(function() {    
                 changeNeedsToBeSent = true;
@@ -147,6 +144,8 @@ $$(document).on('pageBeforeAnimation', function(e){
 
                 }, 1000);
             });            
+            
+            printSchedulingToDeviceDetailsPage();
         }
     }
     

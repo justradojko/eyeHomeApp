@@ -387,7 +387,7 @@ function bindClickActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE 
         if ($$(this).attr("data-deviceID") != "12"){
-            $$(this).off('click', clickElementFunction).on('click',clickElementFunction);
+            $$(this).off('taphold', clickElementFunction).on('taphold',clickElementFunction);
         }
     });
 }
@@ -413,7 +413,7 @@ function bindTapholdActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         
         //IN ORDER TO AVOID BIND OF SAME EVENT MORE THEN ONE TIME  
-        $$(this).off('taphold', tapholdElementFunction).on('taphold',tapholdElementFunction);
+        $$(this).off('click', tapholdElementFunction).on('click',tapholdElementFunction); //RADOJKO
     });
 }
 function tapholdElementFunction(){
@@ -461,6 +461,7 @@ function createSchedulingTable(){
 
 //FUNCTION FOR CREATING ONE LINE IN THE EXISTING SCHEDULING CONTAINER ON DEVICE DETAILS SCREEN
 function addSchedulingToDeviceDetailsScreen(startingTime, endingTime, dayPattern, activated, i){
+    console.log("ADDING DEVICE TO LIST");
     if (startingTime == "null"){
         startingTimeLabel = "<i> --:-- </i>";
     } else{
@@ -570,16 +571,17 @@ function addSchedulingToDeviceDetailsScreen(startingTime, endingTime, dayPattern
 
 //LOAD EXISTING SCHEDULINGS FROM LOCAL DATABASE
 function printSchedulingToDeviceDetailsPage(){
+    console.log("Printing existing schedulings");
+    $$('#existing-schedulings-container').hide();    
     deviceListDb.transaction(function(tx){
         tx.executeSql('SELECT * FROM scheduling WHERE nwkAddr = ? AND endPoint = ?',[lastClickedDevice.nwkaddress, lastClickedDevice.endpoint], function(tx, result){
             if (result.rows.length > 0){
-                $$('#existing-schedulings-container').show();
-            } else {
-                $$('#existing-schedulings-container').hide();
-            }
-            for (var i = 0; i < result.rows.length; i++){
+                $$('#existing-schedulings-container').show();                
+                $$('#existing-schedulings ul').text("");
+                for (var i = 0; i < result.rows.length; i++){
                 addSchedulingToDeviceDetailsScreen(result.rows.item(i).startingTime, result.rows.item(i).endingTime, result.rows.item(i).dayPattern, result.rows.item(i).activated, i);
             }
+            }            
         })
     })
 }
