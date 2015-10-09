@@ -2684,7 +2684,8 @@ html:not(.watch-active-state) .list-block .item-link:active .item-inner:after,
 .list-block .item-link.list-button {
     padding: 0 15px;
     text-align: center;
-    color: #007aff;
+/*    color: #007aff;*/
+    color: #c6c6c6;
     display: block;
     line-height: 43px;
 }
@@ -2698,7 +2699,7 @@ html:not(.watch-active-state) .list-block .item-link:active .item-inner:after,
     top: auto;
     height: 1px;
     width: 100%;
-    background-color: #c8c7cc;
+    background-color: #2e3e44;
     display: block;
     z-index: 15;
     -webkit-transform-origin: 50% 100%;

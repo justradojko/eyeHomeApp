@@ -21,7 +21,7 @@ function createMainScreen(){
     $$('#main-screen-preloader').hide();
     
     deviceListDb.transaction(function(tx){
-        tx.executeSql('SELECT * FROM deviceList WHERE deviceID = 257 OR deviceID = 12 OR deviceID=256 OR deviceID=513',[], function(tx, result){
+        tx.executeSql('SELECT * FROM deviceList WHERE deviceID = 257 OR deviceID = 12 OR deviceID=256 OR deviceID=513 OR deviceID=512',[], function(tx, result){
             console.log('Creating UI on the main screen with data from local database');
 
             for (var i = 0; i < result.rows.length; i++){
@@ -46,7 +46,7 @@ function createMainScreen(){
 function updateMainScreen(){
     $$('#main-screen-preloader').hide();
     deviceListDb.transaction(function(tx){
-        tx.executeSql('SELECT * FROM deviceList WHERE pushedToUI = 0 AND (deviceID = 257 OR deviceID = 12 OR deviceID=256 OR deviceID=513)',[], function(tx, result){
+        tx.executeSql('SELECT * FROM deviceList WHERE pushedToUI = 0 AND (deviceID = 257 OR deviceID = 12 OR deviceID=256 OR deviceID=513 OR deviceID=512)',[], function(tx, result){
             console.log('Updating UI on the main screen with updates from server ('+result.rows.length+')...');
 
             for (var i = 0; i < result.rows.length; i++){
@@ -63,7 +63,7 @@ function updateMainScreen(){
                 checkForUpdatesTimerID = 999;
             }
             console.log('Starting timer for periodical checking for updates on server');
-            checkForUpdatesTimerID = setInterval(grabDeviceDataUpdatedFromLastUpdate, 1000000);
+            checkForUpdatesTimerID = setInterval(grabDeviceDataUpdatedFromLastUpdate, 200000); //RADOJKO
             
             updateScheduleIcons();
             
@@ -148,7 +148,7 @@ function createDeviceInRoomSection(device){
         );
     } else{
         //IF DEVICE EXISTS, UPDATE VALUE)
-        changeDeviceIconAndAttributes(device.nwkAddr, device.endPoint, device.icon, device.lastValue);        
+        changeDeviceIconAndAttributes(device.nwkAddr, device.endPoint, device.icon, device.lastValue, 1);        
     }
 }
 
@@ -296,7 +296,7 @@ function changeDeviceIconAndAttributes(nwkAddr, endPoint, icon, newValue){
 
 //  SENDING NEW DEVICE STATE TO SERVER
 //  CALLING A FUNCTION AFTER 5S TO CHECK IF NEW STATE IS PUSHED TO THE HOME SYSTEM
-function sendNewDeviceValueToServer(nwkAddr, endPoint, newValue, lastValue, icon){    
+function sendNewDeviceValueToServer(nwkAddr, endPoint, newValue, lastValue, icon, checkForAck){    
     $$.ajax({
         type: "POST",
         url: "http://188.226.226.76/API-test/public/deviceState/" + localStorage.token + "/" + localStorage.systemID + "/" + nwkAddr + "/" + endPoint + "/" + newValue,
@@ -305,14 +305,16 @@ function sendNewDeviceValueToServer(nwkAddr, endPoint, newValue, lastValue, icon
 
         success: function(data){
             console.log('New state ' + newValue + ' is sent to server for nwkAddr: '+ nwkAddr);
-            var intervalID = setTimeout(function () {
-                loopingFunctionForDeviceStateChangeAck(nwkAddr, endPoint, newValue, lastValue, intervalID, icon);
-            }, 5000);  
-
-            if (localStorage.getItem(nwkAddr + "" + endPoint, intervalID) !== null){
-                clearTimeout(localStorage.getItem(nwkAddr + "" + endPoint));
-            } 
-            localStorage.setItem(nwkAddr + "" + endPoint, intervalID);
+            if(checkForAck){
+                var intervalID = setTimeout(function () {
+                    loopingFunctionForDeviceStateChangeAck(nwkAddr, endPoint, newValue, lastValue, intervalID, icon);
+                }, 5000);  
+            
+                if (localStorage.getItem(nwkAddr + "" + endPoint, intervalID) !== null){
+                    clearTimeout(localStorage.getItem(nwkAddr + "" + endPoint));
+                } 
+                localStorage.setItem(nwkAddr + "" + endPoint, intervalID);
+            }
         },
         error: function(errorText){
             console.log("Update of new state failed to be sent to server");
@@ -387,7 +389,7 @@ function bindClickActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE 
         if ($$(this).attr("data-deviceID") != "12"){
-            $$(this).off('taphold', clickElementFunction).on('taphold',clickElementFunction);
+            $$(this).off('taphold', clickElementFunction).on('taphold',clickElementFunction); //RADOJKO
         }
     });
 }
@@ -401,7 +403,7 @@ function clickElementFunction(){
         newValue = 0;
     }
     changeDeviceIconAndAttributes(dataAttributes.nwkaddress, dataAttributes.endpoint, dataAttributes.icon, newValue);
-    sendNewDeviceValueToServer(dataAttributes.nwkaddress, dataAttributes.endpoint, newValue, dataAttributes.lastvalue, dataAttributes.icon);    
+    sendNewDeviceValueToServer(dataAttributes.nwkaddress, dataAttributes.endpoint, newValue, dataAttributes.lastvalue, dataAttributes.icon, 1);    
 }
 
 // ******************************************************************************************************************************
@@ -413,7 +415,7 @@ function bindTapholdActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         
         //IN ORDER TO AVOID BIND OF SAME EVENT MORE THEN ONE TIME  
-        $$(this).off('click', tapholdElementFunction).on('click',tapholdElementFunction); //RADOJKO
+        $$(this).off('click', tapholdElementFunction).on('click',tapholdElementFunction);  //RADOJKO
     });
 }
 function tapholdElementFunction(){
@@ -427,6 +429,22 @@ function tapholdElementFunction(){
                                 '&customMaxValue=' + lastClickedDevice.custommaxvalue + 
                                 '&icon=' + lastClickedDevice.icon });
     
+}
+
+function bindOnChangeActionToDimmingSlide(){  
+    console.log('Slider is moved');
+    changeNeedsToBeSent = true;
+
+    if (timerIDForDimmer != 999){
+        clearTimeout(timerIDForDimmer);
+    }      
+
+    timerIDForDimmer = setTimeout(function(){
+//                    console.log('Sending ' + $$('#dimming-slider').val() + ' to server. Nwk Address: ' + e.detail.page.query.endpoint);
+        changeNeedsToBeSent = false;
+        sendNewDimmingValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, $$('#dimming-slider').val());          
+
+    }, 1000);
 }
 
 
@@ -757,6 +775,9 @@ function handleNewDevicesFromServer(data){
             console.log('Adding new content to mySwiper');
             
             switch (data[i].deviceID){
+                case '512':
+                    icon = "Curtains";
+                    break;
                 case '256':
                     icon = "Light";
                     break;
@@ -810,8 +831,8 @@ function addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, device
                         
                         //REMOVE SWIPER CONTAINER IF THERE ARE NO NEW DEVICES TO BE ADDED
                         if ($$('.swiper-wrapper .swiper-slide').length == 0){
-                            $$('swiper-wrapper').hide();
-                            $$('#button-add-new-device').show();
+                            $$('.swiper-container').hide();
+                            $$('#allow-adding-new-device').show();
                         }
                         
                     });
@@ -859,7 +880,7 @@ function checkForNewDevices(timerID){
             console.log(data);
             console.log(data.data.length);
             if (data.data.length > 0){     
-                $$('#allow-adding-new-device').hide();         
+                $$('#allow-adding-new-device').hide();                         
                 $$('.swiper-container').show(); 
                 //TURN OFF ALLOW JOINING NA SERVERU
                 console.log('JOINING DISALLOWED');
@@ -1091,12 +1112,21 @@ function sidePanelLHelpFunction(){
     }, 200);      
 }
 
+function curtainUpButtonClick(){
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 150, 100, "Curtains", 0);
+}
+
+function curtainStopButtonClick(){
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 200, 100, "Curtains", 0);
+}
+
+function curtainDownButtonClick(){
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 250, 100, "Curtains", 0);
+}
 
 
 
 // *****************************************************************************************************************************
-
-
 
 
 

@@ -3,6 +3,7 @@
 // 256 - ON/OFF Light
 // 257 - Dimmer Light
 // 259 - Switch
+// 512 - Curtains
 // 513 - Aux
 
 
@@ -21,6 +22,7 @@ var $$ = Dom7;
 var lastClickedDevice;
 var deviceListDb;
 var checkForUpdatesTimerID = 999;
+var timerIDForDimmer = 999;
 
 // Add view
 var mainView = myApp.addView('.view-main', {
@@ -124,27 +126,12 @@ myApp.onPageInit('main', function () {
 //DEFINE FUNCTION THAT NEEDS TO BE EXECUTED WHEN PAGE IS SHOWN TO USER
 // NOTE: THIS IS DUE TO NOT CALLING PAGEINIT FUNCTION EVERY TIME
 $$(document).on('pageBeforeAnimation', function(e){
-    var timerID = 999;
+
     if (e.detail.page.name == "device-details"){
         if ( localStorage.getItem("systemID") != null){
             console.log('DEVICE-DETAILS PAGE: PAGE-BEFORE-ANIMATION');                   
             // ON SLIDER CHANGE, TURN TIMER FOR 1S AND THEN SEND UPDATE TO SERVER
-            $$('#dimming-slider').change(function() {    
-                changeNeedsToBeSent = true;
-//                console.log('Slider is moved');
-
-                if (timerID != 999){
-                    clearTimeout(timerID);
-                }      
-
-                timerID = setTimeout(function(){
-//                    console.log('Sending ' + $$('#dimming-slider').val() + ' to server. Nwk Address: ' + e.detail.page.query.endpoint);
-                    changeNeedsToBeSent = false;
-                    sendNewDimmingValueToServer(e.detail.page.query.nwkaddress, e.detail.page.query.endpoint, $$('#dimming-slider').val());          
-
-                }, 1000);
-            });            
-            
+            $$('#dimming-slider').off('change', bindOnChangeActionToDimmingSlide).on('change', bindOnChangeActionToDimmingSlide);           
             printSchedulingToDeviceDetailsPage();
         }
     }
@@ -200,19 +187,31 @@ myApp.onPageInit('device-details', function(page){
         case '12':
             console.log('Success');
             $$('#device-description-container').show();
+            $$('#curtain-controlls').hide();
             break;
         case '256':
             $$('#device-description-container, #scheduling-container').show();            
+            $$('#curtain-controlls').hide();
             break;
         case '257':
             $$('#device-description-container, #dimmer-container, #scheduling-container').show();
+            $$('#dimmer-container .item-title').text("Dimming value");
+            $$('#curtain-controlls').hide();
             break;            
+        case '512':
+            $$('#device-description-container, #dimmer-container, #curtain-controlls, #scheduling-container').show();
+            $$("#curtain-up-button").off('click',curtainUpButtonClick).on('click',curtainUpButtonClick);
+            $$("#curtain-stop-button").off('click',curtainStopButtonClick).on('click',curtainStopButtonClick);
+            $$("#curtain-down-button").off('click',curtainDownButtonClick).on('click',curtainDownButtonClick);
+            $$('#dimmer-container .item-title').text("Curtain slider");
+            break;    
         case '513':
+            $$('#curtain-controlls').hide();
             $$('#device-description-container, #scheduling-container').show();
-            break;
+            break;            
         default:
             alert('Device ID is not supported!');
-            $$('#device-description-container, #dimmer-container, #scheduling-container').hide();
+            $$('#device-description-container, #dimmer-container, #curtain-controlls, #scheduling-container').hide();
     }
         
     var timerID;
@@ -287,6 +286,20 @@ myApp.onPageInit('device-description', function(){
     $$('#device-name-input').val(lastClickedDevice.deviceName);
     $$('#favourites').prop('checked', lastClickedDevice.favourites);
     
+    //SHOW FIELD FOR ENTERING CYCLE TIME FOR CURTAIN
+    if(lastClickedDevice.deviceid == "512"){
+        $$("#cycle-time-for-curtain-container").show();
+        
+        //GRAB CYCLE TIME FROM LOCAL DB
+        deviceListDb.transaction(function(tx) {
+            tx.executeSql("SELECT customMaxValue FROM deviceList WHERE nwkAddr = ? AND deviceID = 512",[lastClickedDevice.nwkaddress],function(tx, results){   
+                $$("#cycle-time-for-curtain-container #cycle-time-input").val(results.rows.item(0).customMaxValue);
+            });
+        });
+    } else {
+        $$("#cycle-time-for-curtain-container").hide();
+    }
+    
     
     $$('.save-button').on('click', function(){
         newDeviceName = $$('#device-name-input').val();
@@ -306,19 +319,48 @@ myApp.onPageInit('device-description', function(){
             lastClickedDevice.deviceRoom = newDeviceRoom;
             lastClickedDevice.favourites = favourites;
             
-            //Save update of customMaxValue to local database
+            //Save update to local database
             deviceListDb.transaction(function(tx) {
                 tx.executeSql("UPDATE deviceList SET room = ?, userTag = ?, favourites = ?, pushedToUI = 0 WHERE nwkAddr= ? AND endPoint = ?",[newDeviceRoom, newDeviceName, favourites, lastClickedDevice.nwkaddress, lastClickedDevice.endpoint]);
             }, function (err) {
-                console.log('Error updating customMaxValue in local db: ' + err.code);
-            });        
+                console.log('Error updating deviceList in local db: ' + err.code);
+            });
 
-            //Send update of customMaxValue to server
-            console.log(localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + lastClickedDevice.custommaxvalue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon);
+            customMaxValue = lastClickedDevice.custommaxvalue;
+            if(lastClickedDevice.deviceid == "512"){
+                
+                console.log("Test " + $$("#cycle-time-input").val() + " " + lastClickedDevice.nwkaddress);
+                
+                //UPDATE LOCAL DATABASE WITH CYCLE TIME
+                deviceListDb.transaction(function(tx2) {
+                    tx2.executeSql("UPDATE deviceList SET userTag = 200 WHERE 1",[])
+                }, function (err) {
+                    console.log('Error updating customMaxValue in local db: ' + err.code);
+                }, function() { console.log("UPDATE deviceList SET customMaxValue = "+$$("#cycle-time-input").val()+" WHERE nwkAddr = "+lastClickedDevice.nwkaddress)});
+                
+                customMaxValue = $$("#cycle-time-input").val();
+                
+                //PUSH UPDATE TO SYSTEM
+                $$.ajax({
+                    type: "POST",
+                    url: "http://188.226.226.76/API-test/public/curtainCycleTime/" + localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.endpoint + "/"+$$("#cycle-time-input").val(),
+                    dataType: 'json',
+                    success: function(data){
+                        console.log('Update for curtain cycle time has been sent to server');
+                    },
+                    error: function(errorText){
+                        myApp.alert('Update for curtain cycle failed to been sent to server','Error');
+                    }
+                });                 
+                
+            }
+
+            //Send updates   to server
+//            console.log(localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + lastClickedDevice.custommaxvalue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon);
             
             $$.ajax({
                 type: "POST",
-                url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + lastClickedDevice.custommaxvalue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon,
+                url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + customMaxValue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon,
                 dataType: 'json',
                 success: function(data){
                     mainView.router.back();
@@ -332,9 +374,7 @@ myApp.onPageInit('device-description', function(){
             myApp.alert('Fill all required inputs','Alert');
         }        
         
-    });    
-    
-    
+    });        
 })
 
 
