@@ -296,10 +296,10 @@ function changeDeviceIconAndAttributes(nwkAddr, endPoint, icon, newValue){
 
 //  SENDING NEW DEVICE STATE TO SERVER
 //  CALLING A FUNCTION AFTER 5S TO CHECK IF NEW STATE IS PUSHED TO THE HOME SYSTEM
-function sendNewDeviceValueToServer(nwkAddr, endPoint, newValue, lastValue, icon, checkForAck){    
+function sendNewDeviceValueToServer(nwkAddr, endPoint, newValue, lastValue, icon, checkForAck, updateServerDB){    
     $$.ajax({
         type: "POST",
-        url: "http://188.226.226.76/API-test/public/deviceState/" + localStorage.token + "/" + localStorage.systemID + "/" + nwkAddr + "/" + endPoint + "/" + newValue,
+        url: "http://188.226.226.76/API-test/public/deviceState/" + localStorage.token + "/" + localStorage.systemID + "/" + nwkAddr + "/" + endPoint + "/" + newValue + "/" + updateServerDB,
 
         dataType: 'json',
 
@@ -387,8 +387,8 @@ function loopingFunctionForDeviceStateChangeAck(nwkAddr, endPoint, newValue, old
 function bindClickActionToIconsOnTheMainScreen(){
     console.log('Binding click events to main screen');
     $$(".device" ).each(function( index ) {
-        // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE 
-        if ($$(this).attr("data-deviceID") != "12"){
+        // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE AND CURTAINS
+        if ($$(this).attr("data-deviceID") != "12" && $$(this).attr("data-deviceID") != "512"){
             $$(this).off('taphold', clickElementFunction).on('taphold',clickElementFunction); //RADOJKO
         }
     });
@@ -403,10 +403,8 @@ function clickElementFunction(){
         newValue = 0;
     }
     changeDeviceIconAndAttributes(dataAttributes.nwkaddress, dataAttributes.endpoint, dataAttributes.icon, newValue);
-    sendNewDeviceValueToServer(dataAttributes.nwkaddress, dataAttributes.endpoint, newValue, dataAttributes.lastvalue, dataAttributes.icon, 1);    
+    sendNewDeviceValueToServer(dataAttributes.nwkaddress, dataAttributes.endpoint, newValue, dataAttributes.lastvalue, dataAttributes.icon, 1, 1);    
 }
-
-// ******************************************************************************************************************************
 
 //BIND TAPHOLD ACTON TO ALL ICONS ON THE MAIN SCREEN
 //  TAPHOLD ACTION WILL TAKE USER TO DEVICE DETAILS SCREEN
@@ -430,6 +428,10 @@ function tapholdElementFunction(){
                                 '&icon=' + lastClickedDevice.icon });
     
 }
+
+// ******************************************************************************************************************************
+
+
 
 function bindOnChangeActionToDimmingSlide(){  
     console.log('Slider is moved');
@@ -464,6 +466,9 @@ function sendNewDimmingValueToServer(nwkAddr, endPoint, value){
         }   
     });         
 }
+
+
+// ********************************* FUNCTIONS FOR SCHEDULING ***********************************
 
 
 //CREATE SCHEDULING TABLE IN LOCAL DATABASE
@@ -811,7 +816,6 @@ function handleNewDevicesFromServer(data){
     }
 }
 
-
 function addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, deviceRoom, favourites, icon, swiper){    
     if (  deviceRoom != '' && deviceName != '' ){   
         console.log("INSERT INTO deviceList(nwkAddr, endPoint, deviceID, lastValue, customMaxValue, userTag, room, favourites, icon, pushedToUI) VALUES (?,?,?,0,100,?,?,?,0)" + " " +nwkAddress + " " + endPoint+ " " + deviceID+ " " +  deviceName+ " " + deviceRoom+ " " + favourites+ " " + icon);
@@ -1113,15 +1117,15 @@ function sidePanelLHelpFunction(){
 }
 
 function curtainUpButtonClick(){
-    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 150, 100, "Curtains", 0);
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 150, 100, "Curtains", 0, 0);
 }
 
 function curtainStopButtonClick(){
-    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 200, 100, "Curtains", 0);
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 200, 100, "Curtains", 0, 0);
 }
 
 function curtainDownButtonClick(){
-    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 250, 100, "Curtains", 0);
+    sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 250, 100, "Curtains", 0, 0);
 }
 
 

@@ -378,8 +378,53 @@ myApp.onPageInit('device-description', function(){
 })
 
 
-
-
+//CODE THAT IS EXECUTED WHEN DEVICE_BINDINGS PAGE IS LOADED
+myApp.onPageInit('device-bindings', function(page){
+    deviceListDb.transaction( function(tx){
+        tx.executeSql('SELECT * FROM bindings WHERE destEndPoint= ? AND destNwkAddr = ?',[lastClickedDevice.endpoint, lastClickedDevice.nwkaddress], function(tx, results){
+            if(results.rows.length > 0){
+                $$('.content-block-title').html('EXISTING CONNECTIONS');
+                $$('#existing-device-bindings').show();
+            } else {
+                $$('.content-block-title').html('NO CONNECTIONS FOR THIS DEVICE');
+                $$('#existing-device-bindings').hide();
+            }
+            for (i = 0; i < results.rows.length; i++){
+                tempNwkAddr = results.rows.item(i).srcNwkAddr;
+                tempEndPoint = results.rows.item(i).srcEndPoint
+                deviceListDb.transaction(function(tx2){
+                    tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
+                        //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
+                        buttonNumber = 1;
+                        if (results2.rows.item(0).deviceID == '6'){ //REMOTE
+                            buttonNumber = results2.rows.item(0).endPoint -20 + 1;
+                        }
+                        if (results2.rows.item(0).deviceID == '259'){ //WALL SWITCH
+                            buttonNumber = results2.rows.item(0).endPoint - 5 + 1;
+                        }                        
+                        
+                        //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
+                        $$('#existing-device-bindings ul').append(
+                        "<li class='swipeout'>" +
+//                        "  <a href='#' class='swipeout-content item-link item-content' id='binding" + i + "'>" +
+                        "   <div class='item-content'>" + 
+                        "      <div class='item-media'><img class='connection-icon' src='img/devices/"+ results2.rows.item(0).icon+"-ON.png'/></div>" +                        
+                        "      <div class='item-inner'> " +
+                        "           <div class='item-title connection-title'>"+results2.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
+                        "           <div class='item-after connection-title'>"+results2.rows.item(0).room+"</div>" +
+                        "       </div>" +
+//                        "    </a>" +
+//                        "    <div class='swipeout-actions-right'>" +
+//                        "        <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-startingtime='"+startingTime+"' data-endingtime='"+endingTime+"'> Delete </a>" +
+//                        "    </div>" +        
+                        "   </div>" + 
+                        "</li>");
+                    })
+                })                    
+            }
+        });
+    });  
+});
 
 
 
@@ -506,7 +551,7 @@ myApp.onPageInit('scheduling', function(page){
                 content: ':'
             },
             {
-                values: ('00 05 10 15 20 25 30 35 40 45 50 55 60').split(' ')
+                values: ('00 05 10 15 20 25 30 35 40 45 50 55').split(' ')
             },
         ],      
         onOpen: function (picker) {

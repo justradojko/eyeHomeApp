@@ -7280,3 +7280,30 @@ div {
 #register-container{
     left: 110vw;
 }
+
+#add_new_binding_button1 {
+    position: fixed;
+    width: 90%;
+    height: 5%;
+    font-size: 17px; 
+    margin-left: 5%;
+    background: #2a393c;
+    color: #ff5b00;
+    border: 1px #2e3e44 solid;
+    bottom: 4%;
+    padding-top: 3px;
+}
+
+.connection-icon{
+    margin-left: 15px;
+}
+
+.connection-title{
+    width: 50% !important;
+    display: inline !important;
+    color: #c6c6c6 !important;
+}
+
+#existing-device-bindings .item-inner{
+    display: flex !important;
+}
