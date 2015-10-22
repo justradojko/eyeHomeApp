@@ -2,7 +2,7 @@
   <div class="navbar-inner">
     <div class="left"><a href="#" class="back link"> <i class="icon icon-back"></i><span>Back</span></a></div>
     <div class="center sliding navbar-title" >Connections</div>
-    <div class="right"><a class="save-button" id='save-button-device-details'> <i class="icon"></i><span>Save</span></a></div>      
+<!--    <div class="right"><a class="save-button" id='save-button-device-details'> <i class="icon"></i><span>Save</span></a></div>      -->
   </div>
 </div>
 
@@ -17,8 +17,28 @@
                     </ul>
                 </div>
             </div>
+            <div class="picker-modal binder-picker">
+                <div class="toolbar" id="bind-picker-toolbar">
+                    <div class="toolbar-inner" id="bind-picker-toolbar-inner">
+                        <div class="left"><a href="#" class="close-picker">Cancel</a></div>
+                        <div class="right"><a href="#" id="save-selected-device-for-binding">Select</a></div>
+                    </div>
+                </div>
+                <div class="picker-modal-inner" id="bind-picker-modal-inner">
+                    <div class="content-block" id="possible-bindings-content-block">
+                        <div class="list-block media-list" id="possible-bind-devices">
+                            <ul>
+                            </ul>
+                        </div>                            
+                    </div>
+                </div>
+            </div>          
             
-            <a href="#" class="button active" id="add_new_binding_button1">Add new binding</a>
+            <a href="#" class="button active add_new_binding_button" id="add_new_binding_button_other">Add new binding</a>
+            
+            <a href="#" class="button active add_new_binding_button" id="add_new_binding_button_up">Add new binding for direction UP</a>
+            
+            <a href="#" class="button active add_new_binding_button" id="add_new_binding_button_down">Add new binding for direction DOWN</a>
         </div>    
     </div>
 </div>

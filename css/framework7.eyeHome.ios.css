@@ -4650,11 +4650,15 @@ html.with-statusbar-overlay .popup.tablet-fullscreen {
 }
 
 .picker-modal {
-    position: absolute;
+    position: fixed; /*custom*/
     left: 0;
     bottom: 0;
     width: 100%;
-    height: 260px;
+    
+    max-height: 70%; /*custom*/
+    min-height: 100px;
+    height: auto; /*custom*/
+
     z-index: 11500;
     display: none;
     -webkit-transition-property: -webkit-transform;
@@ -4665,6 +4669,11 @@ html.with-statusbar-overlay .popup.tablet-fullscreen {
     background: #2a393c;
     -webkit-transform: translate3d(0, 100%, 0);
     transform: translate3d(0, 100%, 0);
+}
+
+/*custom*/
+.picker-modal .toolbar-inner{
+    margin-top: 0;
 }
 
 .picker-modal.modal-in,
@@ -4689,8 +4698,12 @@ html.with-statusbar-overlay .popup.tablet-fullscreen {
 }
 
 .picker-modal .toolbar {
-    position: relative;
+    height: 40px !important; /*custom*/
+/*    position: relative;*/
     width: 100%;
+    position: absolute;
+    top: 0;    
+    
 }
 
 .picker-modal .toolbar:before {
@@ -4739,11 +4752,13 @@ html.pixel-ratio-3 .picker-modal .toolbar:before {
     height: -webkit-calc(100% - 44px);
     height: -moz-calc(100% - 44px);
     height: calc(100% - 44px);
+    margin-top: 35px; /*test*/
 }
 
 .picker-modal.picker-modal-inline,
 .popover .picker-modal {
     display: block;
+    position: fixed;
     position: relative;
     background: none;
     z-index: inherit;
@@ -7281,17 +7296,22 @@ div {
     left: 110vw;
 }
 
-#add_new_binding_button1 {
+.add_new_binding_button{
     position: fixed;
     width: 90%;
     height: 5%;
     font-size: 17px; 
     margin-left: 5%;
-    background: #2a393c;
-    color: #ff5b00;
-    border: 1px #2e3e44 solid;
+    margin-bottom: 5%;
+    background: #2a393c !important;
+    color: #ff5b00 !important;
+    border: 1px #2e3e44 solid !important;
     bottom: 4%;
-    padding-top: 3px;
+    padding-top: 3px;    
+}
+
+#add_new_binding_button_up {
+    bottom: 11%;
 }
 
 .connection-icon{
@@ -7306,4 +7326,45 @@ div {
 
 #existing-device-bindings .item-inner{
     display: flex !important;
+}
+#bind-picker-toolbar {
+    height: 40px !important;
+}
+
+#bind-picker-toolbar-inner{
+    margin-top: 0;
+}
+
+
+#bind-picker-modal-inner{
+    margin-top: -43px;
+}
+
+#bind-picker-toolbar:after{
+    background: 0;
+    background-color: #2e3e44;
+}
+
+#possible-bindings-content-block {
+    padding: 0 !important;
+    overflow-y: scroll !important;
+    position: relative;
+    height: 350px;
+}
+
+
+#possible-bindings-content-block .item-inner{
+    padding: 0 !important;
+    display: flex !important;
+}
+
+div#possible-bind-devices {
+    position: relative;
+    height: 300px;
+    overflow-y: scroll;
+    
+}
+
+.binder-picker{
+    padding-bottom: 8%;
 }

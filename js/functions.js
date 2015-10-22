@@ -1043,7 +1043,6 @@ function sendBindingToServer(triggeringDevice, targetedDevice, cluster, bindUnbi
         url: "http://188.226.226.76/API-test/public/addBinding/" + localStorage.token + "/" + localStorage.systemID + "/" + triggeringDevice.endPoint + "/" +  triggeringDevice.nwkAddr + "/" + targetedDevice.endPoint + "/" + targetedDevice.nwkAddr + "/" + cluster +"/" + bindUnbind, 
         dataType: 'json',
         success: function(data){
-            alert('success');
         },
         error: function(errorText){
         }   
@@ -1055,7 +1054,9 @@ function addBindingToLocalDB(triggeringDevice, targetedDevice, cluster){
         tx.executeSql("INSERT INTO bindings(srcEndPoint, srcNwkAddr, destEndPoint, destNwkAddr, cluster) VALUES (?,?,?,?,?)",[triggeringDevice.endPoint, triggeringDevice.nwkAddr, targetedDevice.endPoint, targetedDevice.nwkAddr, cluster]);
     }, function (err) {
         console.log('Error in SQL query: ' + err.code);
-    });        
+    }, function () {
+        console.log('New Binding added to local database');
+    });
 }
 
 function removeBindingToLocalDB(triggeringDevice, targetedDevice, cluster){
@@ -1128,13 +1129,109 @@ function curtainDownButtonClick(){
     sendNewDeviceValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, 250, 100, "Curtains", 0, 0);
 }
 
+function selectBindingSourceLine(){
+    console.log('Background is changed for line' + $$(this).data("nwkaddr"));
+    
+    if ($$(this).css('background-color') == 'rgba(0, 0, 0, 0)'){
+        $$('#possible-bind-devices li').css('background-color','rgba(0, 0, 0, 0)');
+        if (localStorage.getItem('bindSourceNwkAddr') != null){
+            localStorage.removeItem('bindSourceNwkAddr');
+            localStorage.removeItem('bindSourceEndPoint');
+        }
+        
+        
+        //SELECT ROW
+        $$(this).css('background-color','rgba(46, 62, 68, 1)');
+        localStorage.bindSourceNwkAddr = $$(this).data("nwkaddr");
+        localStorage.bindSourceEndPoint = $$(this).data("endpoint");
+    } else {
+        $$('#possible-bind-devices li').css('background-color','rgba(0, 0, 0, 0)');   
+        if (localStorage.getItem(bindSourceNwkAddr) != null){
+            localStorage.removeItem('bindSourceNwkAddr');
+            localStorage.removeItem('bindSourceEndPoint');
+        }
+    }
+}
+
+function openBindingPickerForUp(){
+    $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainUp).on('click',bindToSelectedBindingSourceForCurrtainUp);    
+    myApp.pickerModal(".binder-picker");
+}
+
+function openBindingPickerForDown(){
+    $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainDown).on('click',bindToSelectedBindingSourceForCurrtainDown);    
+    myApp.pickerModal(".binder-picker");
+}
+
+function openBindingPickerForOther(){
+    $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForOther).on('click',bindToSelectedBindingSourceForOther);    
+    myApp.pickerModal(".binder-picker");
+}
+
+function bindToSelectedBindingSourceForCurrtainUp(){    
+    bindToSelectedBindingSource(10);
+}
+
+function bindToSelectedBindingSourceForCurrtainDown(){
+    bindToSelectedBindingSource(12);
+}
+
+function bindToSelectedBindingSourceForCurrtainOther(){
+    bindToSelectedBindingSource(6);
+}
 
 
-// *****************************************************************************************************************************
 
+// ***********************************  DEVICE_BINDING FUNCTION   ****************************************************************
 
+function bindToSelectedBindingSource(cluster){
+    myApp.closeModal('.binder-picker');
+    
+    bindUnbind = 'bind';
+    triggeringDevice = {nwkAddr: localStorage.bindSourceNwkAddr, endPoint: localStorage.bindSourceEndPoint};
+    targetedDevice = {nwkAddr: lastClickedDevice.nwkaddress, endPoint: lastClickedDevice.endpoint};
+    
+    sendBindingToServer(triggeringDevice, targetedDevice, cluster, bindUnbind);
 
+    addBindingToLocalDB(triggeringDevice, targetedDevice, cluster);
+    
+    //ADD RECENTLY ADDED BINDING TO EXISTING LIST
+    deviceListDb.transaction(function(tx){
+        tx.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [localStorage.bindSourceNwkAddr, localStorage.bindSourceEndPoint], function(tx, results){
+            //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
+            buttonNumber = 1;
+            if (results.rows.item(0).deviceID == '6'){ //REMOTE
+                buttonNumber = results.rows.item(0).endPoint -20 + 1;
+            }
+            if (results.rows.item(0).deviceID == '259'){ //WALL SWITCH
+                buttonNumber = results.rows.item(0).endPoint - 5 + 1;
+            }                        
 
+            //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
+            $$('#existing-device-bindings ul').append(
+            "<li class='swipeout'>" +
+//                        "  <a href='#' class='swipeout-content item-link item-content' id='binding" + i + "'>" +
+            "   <div class='item-content'>" + 
+            "      <div class='item-media'><img class='connection-icon' src='img/devices/"+ results.rows.item(0).icon+"-ON.png'/></div>" +                        
+            "      <div class='item-inner'> " +
+            "           <div class='item-title connection-title'>"+results.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
+            "           <div class='item-after connection-title'>"+results.rows.item(0).room+"</div>" +
+            "       </div>" +
+//                        "    </a>" +
+//                        "    <div class='swipeout-actions-right'>" +
+//                        "        <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-startingtime='"+startingTime+"' data-endingtime='"+endingTime+"'> Delete </a>" +
+//                        "    </div>" +        
+            "   </div>" + 
+            "</li>");
+            $$('.content-block-title').html('EXISTING CONNECTIONS');
+            $$('#existing-device-bindings').show();
+            
+            
+            
+            
+        })
+    })    
+}
 
 
 

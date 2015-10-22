@@ -236,7 +236,7 @@ myApp.onPageInit('device-details', function(page){
             lastClickedDevice.deviceRoom = result.rows.item(0).room;
             lastClickedDevice.favourites = result.rows.item(0).favourites;
 
-            console.log(lastClickedDevice.deviceName + "," + lastClickedDevice.deviceRoom + "," + lastClickedDevice.favourites);            
+//            console.log(lastClickedDevice.deviceName + "," + lastClickedDevice.deviceRoom + "," + lastClickedDevice.favourites);            
         }, function(err){
             console.log('There was a problem fetching data from local SQL database' + err.code);
         }, function(){                             
@@ -380,18 +380,40 @@ myApp.onPageInit('device-description', function(){
 
 //CODE THAT IS EXECUTED WHEN DEVICE_BINDINGS PAGE IS LOADED
 myApp.onPageInit('device-bindings', function(page){
+    
+    if(lastClickedDevice.deviceid == 512){
+        $$("#add_new_binding_button_other").hide();
+        $$("#add_new_binding_button_up").show();
+        $$("#add_new_binding_button_down").show();
+        
+        $$("#add_new_binding_button_up").off('click', openBindingPickerForUp).on('click', openBindingPickerForUp);
+
+        $$("#add_new_binding_button_down").off('click', openBindingPickerForDown).on('click', openBindingPickerForDown);    
+    } else {
+        $$("#add_new_binding_button_other").show();
+        $$("#add_new_binding_button_up").hide();
+        $$("#add_new_binding_button_down").hide();
+        
+        $$("#add_new_binding_button_other").off('click', openBindingPickerForOther).on('click', openBindingPickerForOther);  
+    }
+
+    
+    //FILL EXISTING BINDINGS
     deviceListDb.transaction( function(tx){
         tx.executeSql('SELECT * FROM bindings WHERE destEndPoint= ? AND destNwkAddr = ?',[lastClickedDevice.endpoint, lastClickedDevice.nwkaddress], function(tx, results){
             if(results.rows.length > 0){
+                console.log('Number of bindings in local database: ' + results.rows.length);
                 $$('.content-block-title').html('EXISTING CONNECTIONS');
                 $$('#existing-device-bindings').show();
             } else {
+                console.log('No binded devices in local database');
                 $$('.content-block-title').html('NO CONNECTIONS FOR THIS DEVICE');
                 $$('#existing-device-bindings').hide();
             }
             for (i = 0; i < results.rows.length; i++){
                 tempNwkAddr = results.rows.item(i).srcNwkAddr;
                 tempEndPoint = results.rows.item(i).srcEndPoint
+                cluster = results.rows.item(i).cluster;
                 deviceListDb.transaction(function(tx2){
                     tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
                         //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
@@ -406,24 +428,72 @@ myApp.onPageInit('device-bindings', function(page){
                         //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
                         $$('#existing-device-bindings ul').append(
                         "<li class='swipeout'>" +
-//                        "  <a href='#' class='swipeout-content item-link item-content' id='binding" + i + "'>" +
-                        "   <div class='item-content'>" + 
-                        "      <div class='item-media'><img class='connection-icon' src='img/devices/"+ results2.rows.item(0).icon+"-ON.png'/></div>" +                        
-                        "      <div class='item-inner'> " +
-                        "           <div class='item-title connection-title'>"+results2.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
-                        "           <div class='item-after connection-title'>"+results2.rows.item(0).room+"</div>" +
-                        "       </div>" +
-//                        "    </a>" +
-//                        "    <div class='swipeout-actions-right'>" +
-//                        "        <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-startingtime='"+startingTime+"' data-endingtime='"+endingTime+"'> Delete </a>" +
-//                        "    </div>" +        
-                        "   </div>" + 
-                        "</li>");
+                        "   <div class='item-content'>" +
+//                        "      <div class='item-title'>" +                            
+                        "         <div class='item-media'><img class='connection-icon' src='img/devices/"+ results2.rows.item(0).icon+"-ON.png'/></div>" +
+                        "         <div class='item-inner'> " +
+                        "             <div class='item-title connection-title'>"+results2.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
+                        "         <div class='item-after connection-title'>"+results2.rows.item(0).room+"</div>" +
+//                        "      </div>" +
+                        "   </div>" +
+                        "   <div class='swipeout-actions-right'>" +
+                        "       <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-nwkaddress='"+results2.rows.item(0).nwkAddr+"' data-endPoint='"+results2.rows.item(0).endPoint+"' data-cluster='"+cluster+"'> Delete </a>" +
+                        "   </div>" +        
+//                        "   </div>" + 
+                        "</li>");                        
                     })
                 })                    
             }
         });
     });  
+    
+    //FILL POSSIBLE BINDING LIST
+    deviceListDb.transaction( function(tx){
+        tx.executeSql('SELECT * FROM deviceList WHERE deviceID=259 OR deviceID = 6',[], function(tx, results){
+            if(results.rows.length > 0){
+                $$("#possible-bindings-content-block").css('height',46 * results.rows.length + 54 + 'px');
+                $$(".picker-modal").css('height',46 * results.rows.length + 'px');
+                for (i = 0; i < results.rows.length; i++){
+                    //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
+                    buttonNumber = 1;
+                    if (results.rows.item(i).deviceID == '6'){ //REMOTE
+                        buttonNumber = results.rows.item(i).endPoint -20 + 1;
+                    }
+                    if (results.rows.item(i).deviceID == '259'){ //WALL SWITCH
+                        buttonNumber = results.rows.item(i).endPoint - 5 + 1;
+                    }                        
+
+                    //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
+                    $$('#possible-bind-devices ul').append(
+                    "<li data-endpoint='"+results.rows.item(i).endPoint+"' data-nwkaddr='"+results.rows.item(i).nwkAddr+"'>" +
+                    "   <div class='item-content'>" + 
+                    "      <div class='item-media'><img class='connection-icon' src='img/devices/"+ results.rows.item(i).icon+"-ON.png'/></div>" +                        
+                    "      <div class='item-inner'> " +
+                    "           <div class='item-title connection-title'>"+results.rows.item(i).userTag+ " (" + buttonNumber +")</div>" +
+                    "           <div class='item-after connection-title'>"+results.rows.item(i).room+"</div>" +
+                    "       </div>" +
+                    "   </div>" + 
+                    "</li>");                
+    //                deviceListDb.transaction(function(tx2){
+    //                    tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
+    //
+    //                    })
+    //                })  
+                    $$("li[data-nwkaddr='"+results.rows.item(i).nwkAddr+"'][data-endpoint='"+results.rows.item(i).endPoint+"']").off('click',selectBindingSourceLine).on('click',selectBindingSourceLine);
+                }
+            } else {
+                    $$('#possible-bind-devices ul').append(
+                    "<li>" +
+                    "   <div class='item-content'>" +                     
+                    "      <div class='item-inner'> " +
+                    "           <div class='item-title connection-title'>NO DEVICES</div>" +
+                    "       </div>" +
+                    "   </div>" + 
+                    "</li>"); 
+            }
+        });     
+    });
+    
 });
 
 
