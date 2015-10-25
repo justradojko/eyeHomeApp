@@ -12,7 +12,6 @@ function dropTableInLocalDatabase(table){
     });     
 }
 
-
 //  - GRAB ALL DEVICE DATA FROM LOCAL DATABASE
 //  - CREATE MAIN SCREEN
 function createMainScreen(){
@@ -38,7 +37,6 @@ function createMainScreen(){
     }); 
     $$('.scroller').css('height', ($$('.content-block-inner').height() + 200) + "px");
 }
-
 
 //  - GRAB DATA FROM LOCAL DATABASE THAT ARE NOT UPDATED TO MAIN SCREEN
 //  - UPDATE MAIN SCREEN
@@ -375,7 +373,6 @@ function loopingFunctionForDeviceStateChangeAck(nwkAddr, endPoint, newValue, old
     });                  
 }
 
-
 // BIND CLICK ACTION TO ALL DEVICE ICONS
 //  - ON ICON PRESS NEW DEVICE VALUE WILL BE SENT TO SERVER
 //  - ICON AND DATA ATTRIBUTE IS CHANGED
@@ -389,10 +386,11 @@ function bindClickActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE AND CURTAINS
         if ($$(this).attr("data-deviceID") != "12" && $$(this).attr("data-deviceID") != "512"){
-            $$(this).off('taphold', clickElementFunction).on('taphold',clickElementFunction); //RADOJKO
+            $$(this).off('click', clickElementFunction).on('click',clickElementFunction); //RADOJKO
         }
     });
 }
+
 function clickElementFunction(){
     var dataAttributes = $$(this).dataset();
     var newValue;
@@ -413,9 +411,10 @@ function bindTapholdActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         
         //IN ORDER TO AVOID BIND OF SAME EVENT MORE THEN ONE TIME  
-        $$(this).off('click', tapholdElementFunction).on('click',tapholdElementFunction);  //RADOJKO
+        $$(this).off('taphold', tapholdElementFunction).on('taphold',tapholdElementFunction);  //RADOJKO
     });
 }
+
 function tapholdElementFunction(){
     var dataAttributes = $$(this).dataset();
     lastClickedDevice = dataAttributes;
@@ -430,8 +429,6 @@ function tapholdElementFunction(){
 }
 
 // ******************************************************************************************************************************
-
-
 
 function bindOnChangeActionToDimmingSlide(){  
     console.log('Slider is moved');
@@ -448,8 +445,6 @@ function bindOnChangeActionToDimmingSlide(){
 
     }, 1000);
 }
-
-
 
 // WHEN THE SLIDER IS CHANGED IN DEVICE_DETAILS SCREEN, UPDATE NEEDS TO BE SENT TO SERVER
 function sendNewDimmingValueToServer(nwkAddr, endPoint, value){
@@ -691,7 +686,6 @@ function syncBindings(deviceListDb){
     });
 }
 
-
 //CONTROL SCHEDULING ICON ON MAIN SCREEN IN CASE THAT THERE IS A SCHEDUL FOR CERTAIN DEVICE
 function updateScheduleIcons(){
     deviceListDb.transaction(function(tx){
@@ -852,8 +846,6 @@ function addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, device
  
 }
 
-
-
 function addNewDeviceButton(){
     var activeSlide =  mySwiper.activeIndex;
     
@@ -908,6 +900,7 @@ function checkForNewDevices(timerID){
         }
     });    
 }
+
 function disallowJoining(){
     $$.ajax({
         type: "POST",
@@ -919,6 +912,7 @@ function disallowJoining(){
         }
     });
 }
+
 function allowJoining(){
     $$.ajax({
         type: "POST",
@@ -953,7 +947,6 @@ function clearAllSelectionInTables(){
     $$('.item-content .fifth').html('');
     arrayOfSelectedTargets = [];
 }
-
 
 function bindActionsToTableRows(){
 
@@ -1068,8 +1061,6 @@ function removeBindingToLocalDB(triggeringDevice, targetedDevice, cluster){
 }
 
 
-
-
 // ********************************* FUNCTIONS FOR BINDING EVENTS **************************************************************
 
 function sidePanelBindingsFunction(){
@@ -1176,11 +1167,9 @@ function bindToSelectedBindingSourceForCurrtainDown(){
     bindToSelectedBindingSource(12);
 }
 
-function bindToSelectedBindingSourceForCurrtainOther(){
+function bindToSelectedBindingSourceForOther(){
     bindToSelectedBindingSource(6);
 }
-
-
 
 // ***********************************  DEVICE_BINDING FUNCTION   ****************************************************************
 
@@ -1191,48 +1180,96 @@ function bindToSelectedBindingSource(cluster){
     triggeringDevice = {nwkAddr: localStorage.bindSourceNwkAddr, endPoint: localStorage.bindSourceEndPoint};
     targetedDevice = {nwkAddr: lastClickedDevice.nwkaddress, endPoint: lastClickedDevice.endpoint};
     
-    sendBindingToServer(triggeringDevice, targetedDevice, cluster, bindUnbind);
-
-    addBindingToLocalDB(triggeringDevice, targetedDevice, cluster);
-    
-    //ADD RECENTLY ADDED BINDING TO EXISTING LIST
     deviceListDb.transaction(function(tx){
-        tx.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [localStorage.bindSourceNwkAddr, localStorage.bindSourceEndPoint], function(tx, results){
-            //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
-            buttonNumber = 1;
-            if (results.rows.item(0).deviceID == '6'){ //REMOTE
-                buttonNumber = results.rows.item(0).endPoint -20 + 1;
-            }
-            if (results.rows.item(0).deviceID == '259'){ //WALL SWITCH
-                buttonNumber = results.rows.item(0).endPoint - 5 + 1;
-            }                        
+        tx.executeSql('SELECT * FROM bindings WHERE srcNwkAddr = ? AND srcEndPoint = ? AND destEndPoint = ? AND destNwkAddr = ? AND cluster = ?', [localStorage.bindSourceNwkAddr, localStorage.bindSourceEndPoint, lastClickedDevice.endpoint, lastClickedDevice.nwkaddress, cluster], function(tx, results){
 
-            //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
-            $$('#existing-device-bindings ul').append(
-            "<li class='swipeout'>" +
-//                        "  <a href='#' class='swipeout-content item-link item-content' id='binding" + i + "'>" +
-            "   <div class='item-content'>" + 
-            "      <div class='item-media'><img class='connection-icon' src='img/devices/"+ results.rows.item(0).icon+"-ON.png'/></div>" +                        
-            "      <div class='item-inner'> " +
-            "           <div class='item-title connection-title'>"+results.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
-            "           <div class='item-after connection-title'>"+results.rows.item(0).room+"</div>" +
-            "       </div>" +
-//                        "    </a>" +
-//                        "    <div class='swipeout-actions-right'>" +
-//                        "        <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-startingtime='"+startingTime+"' data-endingtime='"+endingTime+"'> Delete </a>" +
-//                        "    </div>" +        
-            "   </div>" + 
-            "</li>");
-            $$('.content-block-title').html('EXISTING CONNECTIONS');
-            $$('#existing-device-bindings').show();
-            
-            
-            
-            
-        })
-    })    
+            //CHECK IF BINDING ALREADY EXISTS
+            if(results.rows.length == 0){
+
+                sendBindingToServer(triggeringDevice, targetedDevice, cluster, bindUnbind);
+
+                addBindingToLocalDB(triggeringDevice, targetedDevice, cluster);
+
+                //ADD RECENTLY ADDED BINDING TO EXISTING LIST
+                deviceListDb.transaction(function(tx2){
+                    tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [localStorage.bindSourceNwkAddr, localStorage.bindSourceEndPoint], function(tx2, results2){
+                        //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
+                        buttonNumber = 1;
+                        if (results2.rows.item(0).deviceID == '6'){ //REMOTE
+                            buttonNumber = results2.rows.item(0).endPoint -20 + 1;
+                        }
+                        if (results2.rows.item(0).deviceID == '259'){ //WALL SWITCH
+                            buttonNumber = results2.rows.item(0).endPoint - 5 + 1;
+                        }                        
+
+                        //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE  
+                        addNewBindingRowToExistingDeviceBinginsList(triggeringDevice, targetedDevice, results2.rows.item(0).userTag, results2.rows.item(0).room, buttonNumber, results2.rows.item(0).icon, cluster, $$('#existing-device-bindings li').length);
+                    });
+                });
+
+            } else {
+                alert("Binding already in the list");
+            }
+        });
+    }); 
 }
 
+//FUNCTION THAT HANDLES ADDING NEW LINE INTO EXISTING_BINDINS_LIST AND BINDS DELETE FUNCTIONS
+function addNewBindingRowToExistingDeviceBinginsList(triggeringDevice, targetedDevice, userTag, room, buttonNumber, icon, cluster, itemNumber){
+    $$('#existing-device-bindings ul').append(
+        "<li class='swipeout'>" +
+        "   <div class='item-content'>" +                          
+        "         <div class='item-media'><img class='connection-icon' src='img/devices/"+ icon+"-ON.png'/></div>" +
+        "         <div class='item-inner'> " +
+        "             <div class='item-title connection-title'>"+userTag+ " (" + buttonNumber +")</div>" +
+        "         <div class='item-after connection-title'>"+room+"</div>" +
+        "   </div>" +
+        "   <div class='swipeout-actions-right'>" +
+        "       <a href='#' class='delete-binding"+itemNumber+" swipeout-delete bg-orange' data-srcendpoint='"+triggeringDevice.endPoint+"' data-srcnwkaddr='"+triggeringDevice.nwkAddr+"' data-destendpoint='"+targetedDevice.endPoint+"' data-destnwkaddr='"+targetedDevice.nwkAddr+"' data-cluster='"+cluster+"'> Delete </a>" +
+        "   </div>" +        
+        "</li>");
+    $$('.content-block-title').html('EXISTING CONNECTIONS');
+    $$('#existing-device-bindings').show();
+
+
+    //WHEN SCHEDULING LINE IS DELETED
+    $$('.delete-binding'+itemNumber).on('click', function () {  
+        //DELETE BINDING FROM LOCAL DATABASE
+        deviceListDb.transaction( function(tx){
+            tx.executeSql("DELETE FROM bindings WHERE srcNwkAddr = ? AND srcEndPoint = ? AND destEndPoint = ? AND destNwkAddr = ? AND cluster = ?", [triggeringDevice.nwkAddr, triggeringDevice.endpoint, targetedDevice.endPoint, targetedDevice.nwkAddr, cluster], function(tx, results){
+                console.log('Binding deleted from local database');
+            });
+        }); 
+        //DELETE BINDING FROM SERVER
+        sendBindingToServer(triggeringDevice, targetedDevice, cluster, 'unbind');
+        if($$('#existing-device-bindings li').length == 1){
+            $$('.content-block-title').html('');
+            $$('#existing-device-bindings').hide();
+        }
+    });     
+    
+}
+
+//FUNCTION THAT SOLVES PROBLEM WITH ASYNC SQLITE TRANSACTIONS FOR FILLING THE LIST OF EXISTING BINDINGS
+function helpFunctinoForAddingBindingRow(tempNwkAddr, tempEndPoint){        
+    deviceListDb.transaction(function(tx2){
+        tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
+            //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
+            console.log('TEST2: ' + tempNwkAddr + "," + tempEndPoint);
+
+            buttonNumber = 1;
+            if (results2.rows.item(0).deviceID == '6'){ //REMOTE
+                buttonNumber = results2.rows.item(0).endPoint -20 + 1;
+            }
+            if (results2.rows.item(0).deviceID == '259'){ //WALL SWITCH
+                buttonNumber = results2.rows.item(0).endPoint - 5 + 1;
+            }     
+
+            //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
+            addNewBindingRowToExistingDeviceBinginsList({nwkAddr: tempNwkAddr,endPoint: tempEndPoint}, {nwkAddr: lastClickedDevice.nwkaddress ,endPoint: lastClickedDevice.endpoint}, results2.rows.item(0).userTag, results2.rows.item(0).room, buttonNumber, results2.rows.item(0).icon, cluster, i);                
+        })
+    })         
+}
 
 
 

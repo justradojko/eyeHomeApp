@@ -84,8 +84,11 @@ function initHomePage() {
 
         if ( $$(".device-container").length == 0) {
             console.log('MAIN SCREEN IS EMPTY. LOADING ALL DATA FROM SERVER');
-            //LOAD ALL DEVICE DATA, BINDINGS AND SCHEDULINGS
-            sidePanelSyncFunction();
+            //GRAB DEVICE LIST FROM SERVER
+            grabAllDeviceDataFromServer();
+
+            //GRAB SCHEDULINGS FROM SERVER
+            syncSchedulings(deviceListDb); 
         } else {
             console.log('MAIN SCREEN IS NOT EMPTY. LOADING JUST UPDATE FROM SERVER');
             grabDeviceDataUpdatedFromLastUpdate();
@@ -163,9 +166,7 @@ $$(document).on('pageBeforeAnimation', function(e){
     if (e.detail.page.fromPage.url == "login.html"){ 
         console.log('LOGIN PAGE: PAGE-BEFORE-ANIMATION'); 
         initHomePage();
-    };
-    
-    
+    };  
 });
 
 
@@ -271,6 +272,9 @@ myApp.onPageInit('device-details', function(page){
             }
         });                              
     });
+    
+    //GRAB EXISTING BINDINGS FROM SERVER FOR DEVICE_BINDINGS PAGE    
+    syncBindings();
 })
 
 
@@ -356,8 +360,6 @@ myApp.onPageInit('device-description', function(){
             }
 
             //Send updates   to server
-//            console.log(localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + lastClickedDevice.custommaxvalue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon);
-            
             $$.ajax({
                 type: "POST",
                 url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + lastClickedDevice.nwkaddress + "/" + lastClickedDevice.deviceid +"/" + lastClickedDevice.endpoint + "/" + newDeviceName + "/" + newDeviceRoom + "/" + customMaxValue +"/" + lastClickedDevice.favourites + "/" + lastClickedDevice.icon,
@@ -380,6 +382,7 @@ myApp.onPageInit('device-description', function(){
 
 //CODE THAT IS EXECUTED WHEN DEVICE_BINDINGS PAGE IS LOADED
 myApp.onPageInit('device-bindings', function(page){
+    console.log('DEVICE BINDINGS PAGE: ON PAGE INIT');
     
     if(lastClickedDevice.deviceid == 512){
         $$("#add_new_binding_button_other").hide();
@@ -410,42 +413,18 @@ myApp.onPageInit('device-bindings', function(page){
                 $$('.content-block-title').html('NO CONNECTIONS FOR THIS DEVICE');
                 $$('#existing-device-bindings').hide();
             }
+            
             for (i = 0; i < results.rows.length; i++){
                 tempNwkAddr = results.rows.item(i).srcNwkAddr;
-                tempEndPoint = results.rows.item(i).srcEndPoint
+                tempEndPoint = results.rows.item(i).srcEndPoint;
+                console.log('TEST1: ' + tempNwkAddr + "," + tempEndPoint);
                 cluster = results.rows.item(i).cluster;
-                deviceListDb.transaction(function(tx2){
-                    tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
-                        //DEFINE BINDED BUTTON ON SWITCH OR REMOTE
-                        buttonNumber = 1;
-                        if (results2.rows.item(0).deviceID == '6'){ //REMOTE
-                            buttonNumber = results2.rows.item(0).endPoint -20 + 1;
-                        }
-                        if (results2.rows.item(0).deviceID == '259'){ //WALL SWITCH
-                            buttonNumber = results2.rows.item(0).endPoint - 5 + 1;
-                        }                        
-                        
-                        //ADD NEW LINE INTO EXISTING CONNECTIONS TABLE
-                        $$('#existing-device-bindings ul').append(
-                        "<li class='swipeout'>" +
-                        "   <div class='item-content'>" +
-//                        "      <div class='item-title'>" +                            
-                        "         <div class='item-media'><img class='connection-icon' src='img/devices/"+ results2.rows.item(0).icon+"-ON.png'/></div>" +
-                        "         <div class='item-inner'> " +
-                        "             <div class='item-title connection-title'>"+results2.rows.item(0).userTag+ " (" + buttonNumber +")</div>" +
-                        "         <div class='item-after connection-title'>"+results2.rows.item(0).room+"</div>" +
-//                        "      </div>" +
-                        "   </div>" +
-                        "   <div class='swipeout-actions-right'>" +
-                        "       <a href='#' class='delete"+i+" swipeout-delete bg-orange' data-nwkaddress='"+results2.rows.item(0).nwkAddr+"' data-endPoint='"+results2.rows.item(0).endPoint+"' data-cluster='"+cluster+"'> Delete </a>" +
-                        "   </div>" +        
-//                        "   </div>" + 
-                        "</li>");                        
-                    })
-                })                    
+                
+                helpFunctinoForAddingBindingRow(tempNwkAddr, tempEndPoint);      
             }
         });
     });  
+
     
     //FILL POSSIBLE BINDING LIST
     deviceListDb.transaction( function(tx){
@@ -474,11 +453,7 @@ myApp.onPageInit('device-bindings', function(page){
                     "       </div>" +
                     "   </div>" + 
                     "</li>");                
-    //                deviceListDb.transaction(function(tx2){
-    //                    tx2.executeSql('SELECT * FROM deviceList WHERE nwkAddr = ? AND endPoint = ?', [tempNwkAddr, tempEndPoint], function(tx2, results2){
-    //
-    //                    })
-    //                })  
+
                     $$("li[data-nwkaddr='"+results.rows.item(i).nwkAddr+"'][data-endpoint='"+results.rows.item(i).endPoint+"']").off('click',selectBindingSourceLine).on('click',selectBindingSourceLine);
                 }
             } else {
@@ -895,9 +870,6 @@ myApp.onPageInit('bindings', function(){
 //CODE THAT IS EXECUTED WHEN SCHEDULING PAGE IS LOADED
 myApp.onPageInit('login-screen', function(){
     console.log('LOGIN PAGE: INITIALIZING');
-    
-//    console.log('LOGIN PAGE: CLEARING LOCALSTORAGE');
-//    localStorage.clear();
     
     $$('#sign-in').on('click', function(){
         console.log('Signining in');
