@@ -1145,11 +1145,13 @@ function selectBindingSourceLine(){
 }
 
 function openBindingPickerForUp(){
+    $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainDown);  
     $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainUp).on('click',bindToSelectedBindingSourceForCurrtainUp);    
     myApp.pickerModal(".binder-picker");
 }
 
 function openBindingPickerForDown(){
+    $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainUp);    
     $$("#save-selected-device-for-binding").off('click',bindToSelectedBindingSourceForCurrtainDown).on('click',bindToSelectedBindingSourceForCurrtainDown);    
     myApp.pickerModal(".binder-picker");
 }
