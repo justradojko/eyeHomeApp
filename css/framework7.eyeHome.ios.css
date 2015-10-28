@@ -7368,3 +7368,11 @@ div#possible-bind-devices {
 .binder-picker{
     padding-bottom: 8%;
 }
+#adding-new-device-info {    
+    font-size: 17px;
+    color: #9d9d9d;
+    margin-top: -18px;;
+    margin-left: 5%;
+    margin-right: 5%;
+    height: auto;
+}

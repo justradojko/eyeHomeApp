@@ -1,5 +1,6 @@
 // 6   - Remote controller
 // 12  - Temperature
+// 13  - IR
 // 256 - ON/OFF Light
 // 257 - Dimmer Light
 // 259 - Switch
@@ -258,17 +259,18 @@ myApp.onPageInit('device-details', function(page){
         //UPDATE DATA ATTRIBUTE FOR CUSTOMMAXVALUE IN DOM
         $$("[data-nwkaddress='" + lastClickedDevice.nwkaddress + "'][data-endpoint='" + lastClickedDevice.endpoint + "']").attr('data-custommaxvalue', $$('#dimming-slider').val());
         
+        mainView.router.back();
+        
         //Send update of customMaxValue to server
         $$.ajax({
             type: "POST",
             url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + page.query.nwkaddress + "/" + page.query.deviceid +"/" + page.query.endpoint + "/" + lastClickedDevice.deviceName + "/" + lastClickedDevice.deviceRoom + "/" + $$('#dimming-slider').val() +"/" + lastClickedDevice.favourites + "/" + page.query.icon,
             dataType: 'json',
-            success: function(data){
-                mainView.router.back();    
-                console.log('Update for device has been sent to server');
+            success: function(data){                
+//                console.log('Update for device has been sent to server');
             },
             error: function(errorText){
-                alert('Update for new device failed to been sent to server');
+                customAlert('Update for new device failed to been sent to server');
             }
         });                              
     });
@@ -289,6 +291,8 @@ myApp.onPageInit('device-description', function(){
     $$('#device-room-input').val(lastClickedDevice.deviceRoom.replace('__',' '));
     $$('#device-name-input').val(lastClickedDevice.deviceName);
     $$('#favourites').prop('checked', lastClickedDevice.favourites);
+    
+    $$('#device-description-icon').attr('src','img/devices/'+getIconFromDeviceID(lastClickedDevice.deviceid)+'-ON.png');
     
     //SHOW FIELD FOR ENTERING CYCLE TIME FOR CURTAIN
     if(lastClickedDevice.deviceid == "512"){
@@ -722,6 +726,8 @@ myApp.onPageInit('add-new-device', function(){
     
     $$('#allow-adding-new-device-switch').on('change', function(){
         if ($$('#allow-adding-new-device-switch').is(':checked')){
+            $$('#adding-new-device-info').show();
+            $$('#adding-new-device-info p').html('Adding new device is  enabled. Waiting for new device to join the network...');
             allowJoining();
             timerID = setInterval(function(){
                 checkForNewDevices(timerID);
@@ -730,6 +736,8 @@ myApp.onPageInit('add-new-device', function(){
                 console.log('Checking for new devices....');
             },20000);            
         } else {
+            $$('#adding-new-device-info').show();
+            $$('#adding-new-device-info p').html('Adding new device is currently disabled');
             clearInterval(timerID);
             disallowJoining();
         }

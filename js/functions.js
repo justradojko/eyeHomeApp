@@ -1,5 +1,33 @@
 // ******************FUNCTION FOR LOADING THE DATA FROM SERVER AND UPDATING THE MAIN SCREEN *************************************
 
+debugFromWebPage = 0;
+
+function getIconFromDeviceID(deviceID){
+    switch (deviceID){
+        case 512:
+            return "Curtains";
+            break;
+        case 256:
+            return "Light";
+            break;
+        case 257:
+            return "Light";
+            break;
+        case 513:
+            return "Boiler";
+            break;
+        case 13:
+            return "IR";
+            break;
+        case 12:
+            return "Temperature";
+            break;
+        case 6:
+            return "Remote";
+        break;
+    }        
+}
+
 
 function dropTableInLocalDatabase(table){
     var query = "DELETE FROM " + table + " WHERE 1";
@@ -385,8 +413,13 @@ function bindClickActionToIconsOnTheMainScreen(){
     console.log('Binding click events to main screen');
     $$(".device" ).each(function( index ) {
         // ASSIGN BIND ACTIONS TO ALL DEVICES EXEPT TEMPERATURE AND CURTAINS
+        if(debugFromWebPage){
+            action = 'taphold';
+        } else {
+            action = 'click';
+        }        
         if ($$(this).attr("data-deviceID") != "12" && $$(this).attr("data-deviceID") != "512"){
-            $$(this).off('click', clickElementFunction).on('click',clickElementFunction); //RADOJKO
+            $$(this).off(action, clickElementFunction).on(action,clickElementFunction); //RADOJKO
         }
     });
 }
@@ -411,7 +444,12 @@ function bindTapholdActionToIconsOnTheMainScreen(){
     $$(".device" ).each(function( index ) {
         
         //IN ORDER TO AVOID BIND OF SAME EVENT MORE THEN ONE TIME  
-        $$(this).off('taphold', tapholdElementFunction).on('taphold',tapholdElementFunction);  //RADOJKO
+        if(debugFromWebPage){
+            action = 'click';
+        } else {
+            action = 'taphold';
+        }
+        $$(this).off(action, tapholdElementFunction).on(action,tapholdElementFunction);  //RADOJKO
     });
 }
 
@@ -450,7 +488,7 @@ function bindOnChangeActionToDimmingSlide(){
 function sendNewDimmingValueToServer(nwkAddr, endPoint, value){
     $$.ajax({
         type: "POST",
-        url: "http://188.226.226.76/API-test/public/deviceState/" + localStorage.token + "/" + localStorage.systemID + "/" + nwkAddr + "/" + endPoint + "/" + value,
+        url: "http://188.226.226.76/API-test/public/deviceState/" + localStorage.token + "/" + localStorage.systemID + "/" + nwkAddr + "/" + endPoint + "/" + value + "/1",
         dataType: 'json',
 
         success: function(data){
@@ -731,7 +769,7 @@ function addContentToSwiper(nwkAddr, endPoint, deviceID, swiperID, icon, localTi
         "                        Device name" +   
         "                    </div>" +   
         "                    <div class='item-input'>" +   
-        "                        <input type='text' id='device-name-input' placeholder='Device room'>" +   
+        "                        <input type='text' id='device-name-input' placeholder='Device name'>" +   
         "                    </div>" +   
         "                </div>" +   
         "            </li>" +            
@@ -741,7 +779,7 @@ function addContentToSwiper(nwkAddr, endPoint, deviceID, swiperID, icon, localTi
         "                        Device room" +   
         "                    </div>" +   
         "                    <div class='item-input'>" +   
-        "                        <input type='text' id='device-room-input' placeholder='Device name'>" +   
+        "                        <input type='text' id='device-room-input' placeholder='Device room'>" +   
         "                    </div>" +   
         "                </div>" +   
         "            </li>" +   
@@ -773,23 +811,8 @@ function handleNewDevicesFromServer(data){
         for (var i = 0; i < data.length; i++){
             console.log('Adding new content to mySwiper');
             
-            switch (data[i].deviceID){
-                case '512':
-                    icon = "Curtains";
-                    break;
-                case '256':
-                    icon = "Light";
-                    break;
-                case '257':
-                    icon = "Light";
-                    break;
-                case '513':
-                    icon = "Boiler";
-                    break;
-                case '6':
-                    icon = "Remote";
-                    break;
-            }
+            icon = getIconFromDeviceID(parseInt(data[i].deviceID));
+            
             timeFromServer = data[i].dateOfLastChange;
 //            console.log('Server time: ' + timeFromServer);     
             localTimeTemp = string = timeFromServer.substr(5,5) + '/' + timeFromServer.substr(0,4) + ' ' + timeFromServer.substr(11,8);
@@ -831,6 +854,7 @@ function addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, device
                         if ($$('.swiper-wrapper .swiper-slide').length == 0){
                             $$('.swiper-container').hide();
                             $$('#allow-adding-new-device').show();
+                            $$('#adding-new-device-info').show();
                         }
                         
                     });
@@ -847,22 +871,26 @@ function addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, device
 }
 
 function addNewDeviceButton(){
-    var activeSlide =  mySwiper.activeIndex;
+//    var activeSlide =  mySwiper.activeIndex;
+    var activeSlide = mySwiper.clickedSlide.id;
+    console.log('Active slide: ' + activeSlide);
     
-    deviceName = $$('#swiper-'+activeSlide+" #device-name-input").val();
-    deviceRoom = $$('#swiper-'+activeSlide+" #device-room-input").val().replace(' ','__');
+//mySwiper.clickedSlide.id    
+    
+    deviceName = $$("#"+activeSlide+" #device-name-input").val();
+    deviceRoom = $$("#"+activeSlide+" #device-room-input").val().replace(' ','__');
     
     var favourites = 0
     if ($$('#swiper-1 #favourites').is(':checked')){
         favourites = 1;
     }
     
-    nwkAddress = $$('#swiper-'+activeSlide).attr('data-nwkaddress');
-    endPoint = $$('#swiper-'+activeSlide).attr('data-endpoint');
-    deviceID = $$('#swiper-'+activeSlide).attr('data-deviceid');
-    icon = $$('#swiper-'+activeSlide).attr('data-icon');
+    nwkAddress = $$('#'+activeSlide).attr('data-nwkaddress');
+    endPoint = $$('#'+activeSlide).attr('data-endpoint');
+    deviceID = $$('#'+activeSlide).attr('data-deviceid');
+    icon = $$('#'+activeSlide).attr('data-icon');
 
-    addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, deviceRoom, favourites, icon, activeSlide);
+    addNewDeviceToSystem(nwkAddress, deviceID, endPoint, deviceName, deviceRoom, favourites, icon, mySwiper.activeIndex);
 }
 
 //CHECK IF THERE ARE SOME PENDING DEVICES ON SERVER THAT WAITS TO BE ADDED
@@ -875,7 +903,8 @@ function checkForNewDevices(timerID){
         success: function(data){  
             console.log(data);
             console.log(data.data.length);
-            if (data.data.length > 0){     
+            if (data.data.length > 0){  
+                $$('#adding-new-device-info').hide();
                 $$('#allow-adding-new-device').hide();                         
                 $$('.swiper-container').show(); 
                 //TURN OFF ALLOW JOINING NA SERVERU
@@ -893,6 +922,7 @@ function checkForNewDevices(timerID){
                 
                 handleNewDevicesFromServer(data.data);
             } else {
+                $$('#adding-new-device-info').show();
                 console.log('No new pending devices from server');
                 $$('#allow-adding-new-device').show();         
                 $$('.swiper-container').hide(); 
@@ -1178,7 +1208,7 @@ function bindToSelectedBindingSourceForOther(){
 function bindToSelectedBindingSource(cluster){
     myApp.closeModal('.binder-picker');
     
-    bindUnbind = 'bind';
+    bindUnbind = 255;
     triggeringDevice = {nwkAddr: localStorage.bindSourceNwkAddr, endPoint: localStorage.bindSourceEndPoint};
     targetedDevice = {nwkAddr: lastClickedDevice.nwkaddress, endPoint: lastClickedDevice.endpoint};
     
@@ -1243,7 +1273,7 @@ function addNewBindingRowToExistingDeviceBinginsList(triggeringDevice, targetedD
             });
         }); 
         //DELETE BINDING FROM SERVER
-        sendBindingToServer(triggeringDevice, targetedDevice, cluster, 'unbind');
+        sendBindingToServer(triggeringDevice, targetedDevice, cluster, 0);
         if($$('#existing-device-bindings li').length == 1){
             $$('.content-block-title').html('');
             $$('#existing-device-bindings').hide();
