@@ -477,11 +477,35 @@ function bindOnChangeActionToDimmingSlide(){
     }      
 
     timerIDForDimmer = setTimeout(function(){
-//                    console.log('Sending ' + $$('#dimming-slider').val() + ' to server. Nwk Address: ' + e.detail.page.query.endpoint);
         changeNeedsToBeSent = false;
         sendNewDimmingValueToServer(lastClickedDevice.nwkaddress, lastClickedDevice.endpoint, $$('#dimming-slider').val());          
+        
+        // UPDATE NEW CUSTOM MAX VALUE TO LOCAL DATABASE
+        deviceListDb.transaction(function(tx) {
+            tx.executeSql("UPDATE deviceList SET customMaxValue = ? WHERE nwkAddr= ? AND endPoint = ?",[$$('#dimming-slider').val(), page.query.nwkaddress, page.query.endpoint]);
+        }, function (err) {
+            console.log('Error updating customMaxValue in local db: ' + err.code);
+        }); 
+        
+        //UPDATE DATA ATTRIBUTE FOR CUSTOMMAXVALUE IN DOM
+        $$("[data-nwkaddress='" + lastClickedDevice.nwkaddress + "'][data-endpoint='" + lastClickedDevice.endpoint + "']").attr('data-custommaxvalue', $$('#dimming-slider').val());
+        
+        mainView.router.back();
+        
+        //SAVE NEW CUSTOM MAX VALUE TO SERVER (FIELD CUSTOMMAXVALUE)
+        $$.ajax({
+            type: "POST",
+            url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + page.query.nwkaddress + "/" + page.query.deviceid +"/" + page.query.endpoint + "/" + lastClickedDevice.deviceName + "/" + lastClickedDevice.deviceRoom + "/" + $$('#dimming-slider').val() +"/" + lastClickedDevice.favourites + "/" + page.query.icon,
+            dataType: 'json',
+            success: function(data){                
+//                console.log('Update for device has been sent to server');
+            },
+            error: function(errorText){
+                customAlert('Update for new device failed to been sent to server');
+            }
+        });        
 
-    }, 1000);
+    }, 1000);    
 }
 
 // WHEN THE SLIDER IS CHANGED IN DEVICE_DETAILS SCREEN, UPDATE NEEDS TO BE SENT TO SERVER

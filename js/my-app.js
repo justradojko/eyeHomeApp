@@ -131,11 +131,11 @@ myApp.onPageInit('main', function () {
 // NOTE: THIS IS DUE TO NOT CALLING PAGEINIT FUNCTION EVERY TIME
 $$(document).on('pageBeforeAnimation', function(e){
 
-    if (e.detail.page.name == "device-details"){
-        if ( localStorage.getItem("systemID") != null){
+    if (e.detail.page.name == "device-details"){        
+        if ( localStorage.getItem("systemID") != null){            
             console.log('DEVICE-DETAILS PAGE: PAGE-BEFORE-ANIMATION');                   
             // ON SLIDER CHANGE, TURN TIMER FOR 1S AND THEN SEND UPDATE TO SERVER
-            $$('#dimming-slider').off('change', bindOnChangeActionToDimmingSlide).on('change', bindOnChangeActionToDimmingSlide);           
+            $$('#dimming-slider').off('input change', bindOnChangeActionToDimmingSlide).on('input change', bindOnChangeActionToDimmingSlide);           
             printSchedulingToDeviceDetailsPage();
         }
     }
@@ -175,7 +175,7 @@ $$(document).on('pageBeforeAnimation', function(e){
 
 //CODE THAT IS EXECUTED WHEN DEVICE_DETAILS PAGE IS LOADED
 myApp.onPageInit('device-details', function(page){
-    console.log('DEVICE DETAILS PAGE: ON PAGE INIT');
+    console.log('DEVICE DETAILS PAGE: ON PAGE INIT');  
     
     clearInterval(checkForUpdatesTimerID);    
     
@@ -237,8 +237,10 @@ myApp.onPageInit('device-details', function(page){
             lastClickedDevice.deviceName = result.rows.item(0).userTag;
             lastClickedDevice.deviceRoom = result.rows.item(0).room;
             lastClickedDevice.favourites = result.rows.item(0).favourites;
+            
+            //SETING DEVICE_DETAILS PAGE TITLE
+            $$("#device-details-title").html(lastClickedDevice.deviceName);
 
-//            console.log(lastClickedDevice.deviceName + "," + lastClickedDevice.deviceRoom + "," + lastClickedDevice.favourites);            
         }, function(err){
             console.log('There was a problem fetching data from local SQL database' + err.code);
         }, function(){                             
@@ -248,32 +250,8 @@ myApp.onPageInit('device-details', function(page){
         
     //ACTION ON SAVE BUTTON CLICK
     $$('.save-button').on('click', function(){
-        
-        // UPDATE NEW CUSTOM MAX VALUE TO LOCAL DATABASE
-        deviceListDb.transaction(function(tx) {
-            tx.executeSql("UPDATE deviceList SET customMaxValue = ? WHERE nwkAddr= ? AND endPoint = ?",[$$('#dimming-slider').val(), page.query.nwkaddress, page.query.endpoint]);
-        }, function (err) {
-            console.log('Error updating customMaxValue in local db: ' + err.code);
-        }); 
-        
-        //UPDATE DATA ATTRIBUTE FOR CUSTOMMAXVALUE IN DOM
-        $$("[data-nwkaddress='" + lastClickedDevice.nwkaddress + "'][data-endpoint='" + lastClickedDevice.endpoint + "']").attr('data-custommaxvalue', $$('#dimming-slider').val());
-        
-        mainView.router.back();
-        
-        //Send update of customMaxValue to server
-        $$.ajax({
-            type: "POST",
-            url: "http://188.226.226.76/API-test/public/updateDeviceDetails/" + localStorage.token + "/" + localStorage.systemID + "/" + page.query.nwkaddress + "/" + page.query.deviceid +"/" + page.query.endpoint + "/" + lastClickedDevice.deviceName + "/" + lastClickedDevice.deviceRoom + "/" + $$('#dimming-slider').val() +"/" + lastClickedDevice.favourites + "/" + page.query.icon,
-            dataType: 'json',
-            success: function(data){                
-//                console.log('Update for device has been sent to server');
-            },
-            error: function(errorText){
-                customAlert('Update for new device failed to been sent to server');
-            }
-        });                              
-    });
+                                      
+    });    
     
     //GRAB EXISTING BINDINGS FROM SERVER FOR DEVICE_BINDINGS PAGE    
     syncBindings();
@@ -288,12 +266,20 @@ myApp.onPageInit('device-details', function(page){
 //CODE THAT IS EXECUTED WHEN DEVICE_DESCRIPTION PAGE IS LOADED
 myApp.onPageInit('device-description', function(){
     
+    someInputChanged = 0;
+    
     $$('#device-room-input').val(lastClickedDevice.deviceRoom.replace('__',' '));
     $$('#device-name-input').val(lastClickedDevice.deviceName);
     $$('#favourites').prop('checked', lastClickedDevice.favourites);
     
-    $$('#device-description-icon').attr('src','img/devices/'+getIconFromDeviceID(lastClickedDevice.deviceid)+'-ON.png');
+    //CHECK IF USER HAS CHANGED SOME OF THE INPUTS, IF SO, ENABLE SAVE BUTTON
+    $$("#device-name-input, #device-room-input, #cycle-time-input, #favourites").on('change', function(){
+        someInputChanged = 1;
+        $$("#save-button-device-description").show();
+    })
     
+    $$('#device-description-icon').attr('src','img/devices/'+getIconFromDeviceID(lastClickedDevice.deviceid)+'-ON.png');
+        
     //SHOW FIELD FOR ENTERING CYCLE TIME FOR CURTAIN
     if(lastClickedDevice.deviceid == "512"){
         $$("#cycle-time-for-curtain-container").show();
